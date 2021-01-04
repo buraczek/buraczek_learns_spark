@@ -1,0 +1,51 @@
+FROM alpine:3.12.3
+
+ARG SPARK_VERSION=spark-3.0.1
+ARG HADOOP_VERSION=hadoop3.2
+ARG SPARK_TGZ_VERSION=${SPARK_VERSION}-bin-${HADOOP_VERSION}
+ARG SPARK_URL=https://##YOUR_MIRROR_GOES_HERE##/spark/${SPARK_VERSION}/${SPARK_TGZ_VERSION}.tgz
+ARG SPARK_TARGET_HOME=/opt/spark
+
+ARG SBT_VERSION=1.4.5
+ARG SBT_TARGET_HOME=/opt/sbt
+ARG SBT_URL=https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz
+
+ARG EXAMPLES_REPO=##REPOSITORY WITH DATA AND EXAMPLES FROM THE BOOK##
+
+RUN apk update
+RUN apk upgrade
+RUN apk add bash
+RUN apk add wget
+RUN apk add vim
+RUN apk add git
+
+RUN apk add openjdk11
+RUN java -version
+
+RUN apk add python3
+RUN python3 -V
+
+RUN git clone ${EXAMPLES_REPO}
+
+RUN wget ${SBT_URL}
+RUN tar -xf sbt-${SBT_VERSION}.tgz
+RUN mv sbt ${SBT_TARGET_HOME}
+RUN (cd /tmp && ${SBT_TARGET_HOME}/bin/sbt -V)
+
+RUN wget ${SPARK_URL}
+RUN tar -xf ${SPARK_TGZ_VERSION}.tgz
+RUN mv ${SPARK_TGZ_VERSION} ${SPARK_TARGET_HOME}
+
+ENV SPARK_HOME=${SPARK_TARGET_HOME}
+ENV SBT_HOME=${SBT_TARGET_HOME}
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk/jre
+ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin:$JAVA_HOME:$SBT_TARGET_HOME
+ENV PYSPARK_PYTHON=python3
+
+RUN pyspark --version 2>&1 | grep -ohE 'Scala version [.[:digit:]]*'
+RUN spark-shell --version 2>&1 | grep -ohE 'Scala version [.[:digit:]]*'
+RUN spark-sql --version 2>&1 | grep -ohE 'Scala version [.[:digit:]]*'
+RUN spark-submit --version 2>&1 | grep -ohE 'Scala version [.[:digit:]]*'
+
+WORKDIR /root
+ADD . /root
