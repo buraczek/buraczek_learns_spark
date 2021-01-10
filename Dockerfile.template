@@ -25,6 +25,10 @@ RUN java -version
 RUN apk add python3
 RUN python3 -V
 
+RUN apk add py3-pip
+RUN pip3 -V
+RUN apk add py3-numpy
+
 RUN git clone ${EXAMPLES_REPO}
 
 RUN wget ${SBT_URL}
